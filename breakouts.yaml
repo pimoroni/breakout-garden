@@ -1,0 +1,9 @@
+0x33: mlx90640-library
+0x3c: sh1106-oled-library
+0x3d: sh1106-oled-library
+0x1d: lsm303d-python
+0x1e: lsm303d-python
+0x23: ltr559-python
+0x38: bh1745-python
+0x39: bh1745-python
+0x52: vl53l1x-python
