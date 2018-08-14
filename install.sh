@@ -8,7 +8,7 @@ if [ $(id -u) -ne 0 ]; then
 fi
 
 printf "Please plug the breakouts you would like to install into your Breakout Garden\n\n"
-read -p "Press any key to continue..."
+read -p "Press enter to continue..."
 printf "\n"
 
 WORKING_DIR=`pwd`
@@ -29,7 +29,7 @@ done
 
 printf "\n"
 
-read -p "Press any key to continue..."
+read -p "Press enter to continue..."
 
 python autodetect.py --install | while read line; do
 	printf "Installing $line\n"
