@@ -26,17 +26,30 @@ def identify(find_i2c_addr):
     return None
 
 found_addr = []
+found_devices = {}
 
 for i2c_addr in addresses:
     try:
         bus.read_byte_data(i2c_addr, 0x00)
         found_addr.append(i2c_addr)
+        library, name = identify(i2c_addr)
+        if name not in found_devices:
+            found_devices[name] = [library, [i2c_addr]]
+        else:
+            found_devices[name][1].append(i2c_addr)
     except IOError as e:
         continue
 
-for i2c_addr in found_addr:
-    library, name = identify(i2c_addr)
+for name in found_devices:
+    library, i2c_addresses = found_devices[name]
+    format_string = ""
     if install_mode:
-        print("{library}".format(library=library))
+        format_string = "{library}"
     else:
-        print("0x{addr:02x}: {name} (https://github.com/pimoroni/{library})".format(addr=i2c_addr, name=name, library=library))
+        format_string = "{i2c_addresses}: {name} ({library})"
+
+    print(format_string.format(
+        i2c_addresses = ",".join(["0x{:02x}".format(i2c_addr) for i2c_addr in i2c_addresses]),
+            name = name,
+            library = library
+        ))
