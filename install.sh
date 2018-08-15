@@ -12,6 +12,7 @@ read -p "Press enter to continue..."
 printf "\n"
 
 WORKING_DIR=`pwd`
+TMP_DIR="/tmp/breakout-garden"
 
 results=`python autodetect.py`
 found=`echo "$results" | wc -l`
@@ -31,12 +32,25 @@ printf "\n"
 
 read -p "Press enter to continue..."
 
+if [[ ! -d "$TMP_DIR" ]]; then
+	mkdir "$TMP_DIR"
+fi
+
 python autodetect.py --install | while read line; do
 	printf "Installing $line\n"
-	cd /tmp
-	git clone https://github.com/pimoroni/$line
-	cd $line
-	./install.sh
+	git_dir="$line"
+	cd $TMP_DIR
+	if [[ ! -d "$git_dir/.git" ]]; then
+		rm -f $git_dir
+		git clone https://github.com/pimoroni/$line $git_dir
+	fi
+	cd $git_dir
+	git pull origin master
+	if [[ -f "install.sh" ]]; then
+		./install.sh
+	else
+		printf "Warning: No install.sh found for $line. Skipping!";
+	fi
 	cd $WORKING_DIR
 done
 
