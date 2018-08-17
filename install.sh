@@ -121,9 +121,9 @@ do_uninstall () {
 	git pull origin master > $LOG_FILE 2>&1
 	if [[ -f "uninstall.sh" ]]; then
 		if [[ ! "$VERBOSE" == "" ]]; then
-			"./uninstall.sh"
+			./uninstall.sh
 		else
-			"./uninstall.sh" > $LOG_FILE 2>&1
+			./uninstall.sh > $LOG_FILE 2>&1
 		fi
 	else
 		if [[ ! "$VERBOSE" == "" ]]; then
