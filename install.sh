@@ -23,6 +23,7 @@ TMP_DIR="/tmp/breakout-garden"
 LOG_FILE="$TMP_DIR/install.log"
 ACTION="install"
 VERBOSE=""
+FORCE=""
 
 DEVICES=()
 STATUSES=()
@@ -34,10 +35,11 @@ DETECTED=`python autodetect.py --install`
 
 COUNT=`echo -e "$DETECTED" | wc -l`
 
-while getopts "uv" option; do
+while getopts "uvf" option; do
 	case $option in
 		u  ) ACTION="uninstall";VERBOSE="true";;
 		v  ) VERBOSE="true";;
+		f  ) FORCE="true";;
 		\? ) printf "Invalid option: -$OPTARG\n"; exit 1;;
 	esac
 done
@@ -188,6 +190,8 @@ display () {
 				inform  "Uninstalling...";;
 			"installing"*)
 				inform  "Installing...  ";;
+			"reinstalling"*)
+				inform  "Reinstalling...";;
 		esac
 		printf "\n"
 	done
@@ -201,7 +205,7 @@ uninstalls_required=0
 
 for ((y = 0; y < $COUNT; y++)); do
 	printf "\n"
-	if [[ "${STATUSES[$y]}" = "required" ]]; then
+	if [[ "${STATUSES[$y]}" = "required" ]] || [[ ! "$FORCE" = "" ]]; then
 		installs_required=$(($installs_required+1))
 	fi
 	if [[ "$ACTION" = "uninstall" ]] && [[ "${STATUSES[$y]}" = "installed" ]]; then
@@ -217,12 +221,22 @@ if [[ "$ACTION" = "install" ]]; then
 	if [[ "$installs_required" = "0" ]]; then
 		read -p "Nothing to do! Press enter to quit..."
 	else
-		read -p "$installs_required required. Press enter to continue (Ctrl+C to cancel)..."
+		action_text="Installing"
+		if [[ ! "$FORCE" = "" ]]; then
+			forced_mode=" (forced)"
+			action_text="Reinstalling"
+		fi
+		read -p "$action_text $installs_required module(s)$forced_mode. Enter to continue (Ctrl+C to cancel)..."
 
 		for ((y = 0; y < $COUNT; y++)); do
 			STATUS=${STATUSES[$y]}
-			if [[ ! "$STATUS" == "installed" ]]; then
-				STATUSES[$y]="installing"
+			if [[ ! "$STATUS" == "installed" ]] || [[ ! "$FORCE" = "" ]]; then
+				if [[ ! "$FORCE" = "" ]]; then
+					STATUSES[$y]="reinstalling"
+				else
+					STATUSES[$y]="installing"
+				fi
+
 				display
 
 				do_install $y
@@ -236,7 +250,7 @@ if [[ "$ACTION" = "uninstall" ]]; then
 	if [[ "$uninstalls_required" = "0" ]]; then
 		read -p "Nothing to do! Press enter to quit..."
 	else
-		read -p "$uninstalls_required required. Press enter to continue (Ctrl+C to cancel)..."
+		read -p "Removing $uninstalls_required module(s). Enter to continue (Ctrl+C to cancel)..."
 
 		for ((y = 0; y < $COUNT; y++)); do
 			STATUS=${STATUSES[$y]}
