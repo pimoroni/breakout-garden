@@ -21,7 +21,8 @@ warning() {
 WORKING_DIR=`pwd`
 TMP_DIR="/tmp/breakout-garden"
 LOG_FILE="$TMP_DIR/install.log"
-
+ACTION="install"
+VERBOSE=""
 
 DEVICES=()
 STATUSES=()
@@ -32,6 +33,14 @@ PADDING=5
 DETECTED=`python autodetect.py --install`
 
 COUNT=`echo -e "$DETECTED" | wc -l`
+
+while getopts "uv" option; do
+	case $option in
+		u  ) ACTION="uninstall";VERBOSE="true";;
+		v  ) VERBOSE="true";;
+		\? ) printf "Invalid option: -$OPTARG\n"; exit 1;;
+	esac
+done
 
 if [[ "$COUNT" -eq "0" ]] || [[ "$DETECTED" == "" ]]; then
 	printf "Sorry, I couldn't find any breakouts!\n"
@@ -45,7 +54,6 @@ fi
 array_index () {
 	local -n array=$1
 	string=$2
-	printf "$array $string\n"
 	for i in "${!array[@]}"; do
 		if [[ "${array[$i]}" = "$string" ]]; then
 			return $i
@@ -91,6 +99,45 @@ check_status () {
 	fi
 }
 
+do_uninstall () {
+	index=$1
+	package_name=${DEVICES[$index]}
+	package_library=${REPOS[$index]}
+
+	git_dir=$package_library
+	cd $TMP_DIR
+	if [[ ! -d "$git_dir/.git" ]]; then
+		if [[ ! "$VERBOSE" = "" ]]; then
+			rm -f $git_dir > $LOG_FILE
+			git clone https://github.com/pimoroni/$package_library $git_dir
+		else
+			rm -f $git_dir > $LOG_FILE 2>&1
+			git clone https://github.com/pimoroni/$package_library $git_dir > $LOG_FILE 2>&1
+		fi
+	fi
+	cd $git_dir
+	git pull origin master > $LOG_FILE 2>&1
+	if [[ -f "uninstall.sh" ]]; then
+		if [[ ! "$VERBOSE" = "" ]]; then
+			"./uninstall.sh"
+		else
+			"./uninstall.sh" > $LOG_FILE 2>&1
+		fi
+	else
+		if [[ ! "$VERBOSE" = "" ]]; then
+			echo "Warning: No uninstall.sh found for $package_name."
+		else
+			echo "Warning: No uninstall.sh found for $package_name." > $LOG_FILE 2>&1
+		fi
+		STATUSES[$index]="error"
+		return 1
+	fi
+	cd $TMP_DIR
+	rm -r $git_dir
+	cd $WORKING_DIR
+	STATUSES[$index]="uninstalled"
+}
+
 do_install () {
 	index=$1
 	package_name=${DEVICES[$index]}
@@ -105,9 +152,9 @@ do_install () {
 	cd $git_dir
 	git pull origin master > $LOG_FILE 2>&1
 	if [[ -f "install.sh" ]]; then
-		./install.sh > $LOG_FILE 2>&1
+		"./install.sh" > $LOG_FILE 2>&1
 	else
-		echo "Warning: No install.sh found for $line."  $LOG_FILE 2>&1
+		echo "Warning: No install.sh found for $package_name."  $LOG_FILE 2>&1
 		STATUSES[$index]="error"
 		return 1
 	fi
@@ -117,9 +164,11 @@ do_install () {
 }
 
 display () {
-	lines=$(tput lines)
-	lines=$(($lines-$COUNT-$PADDING))
-	tput cup $lines 0
+	if [[ "$VERBOSE" = "" ]]; then
+		lines=$(tput lines)
+		lines=$(($lines-$COUNT-$PADDING))
+		tput cup $lines 0
+	fi
 	printf "Breakout Garden: Installer. ($COUNT breakout(s) found) \n\n"
 	for ((i = 0; i < $COUNT; i++)); do
 		ITEM=${DEVICES[$i]}
@@ -128,13 +177,17 @@ display () {
 		printf "%-30s %s" "$ITEM:" " "
 		case $STATUS in
 			"error"*)
-				warning "Error!       ";;
+				warning "Error!         ";;
 			"required"*)
-				warning "Required     ";;
+				warning "Required       ";;
 			"installed"*)
-				success "Installed    ";;
+				success "Installed      ";;
+			"uninstalled"*)
+				success "Uninstalled    ";;
+			"uninstalling"*)
+				inform  "Uninstalling...";;
 			"installing"*)
-				inform  "Installing...";;
+				inform  "Installing...  ";;
 		esac
 		printf "\n"
 	done
@@ -144,11 +197,15 @@ display () {
 check_status
 
 installs_required=0
+uninstalls_required=0
 
 for ((y = 0; y < $COUNT; y++)); do
 	printf "\n"
 	if [[ "${STATUSES[$y]}" = "required" ]]; then
 		installs_required=$(($installs_required+1))
+	fi
+	if [[ "$ACTION" = "uninstall" ]] && [[ "${STATUSES[$y]}" = "installed" ]]; then
+		uninstalls_required=$(($uninstalls_required+1))
 	fi
 done
 
@@ -156,21 +213,43 @@ printf "\n\n\n\n\n"
 
 display
 
-if [[ "$installs_required" = "0" ]]; then
-	read -p "Nothing to do! Press enter to quit..."
-else
-	read -p "$installs_required required. Press enter to continue (Ctl+C to cancel)..."
+if [[ "$ACTION" = "install" ]]; then
+	if [[ "$installs_required" = "0" ]]; then
+		read -p "Nothing to do! Press enter to quit..."
+	else
+		read -p "$installs_required required. Press enter to continue (Ctrl+C to cancel)..."
 
-	for ((y = 0; y < $COUNT; y++)); do
-		STATUS=${STATUSES[$y]}
-		if [[ ! "$STATUS" == "installed" ]]; then
-			STATUSES[$y]="installing"
-			display
+		for ((y = 0; y < $COUNT; y++)); do
+			STATUS=${STATUSES[$y]}
+			if [[ ! "$STATUS" == "installed" ]]; then
+				STATUSES[$y]="installing"
+				display
 
-			do_install $y
-			display
-		fi
-	done
+				do_install $y
+				display
+			fi
+		done
+	fi
+fi
+
+if [[ "$ACTION" = "uninstall" ]]; then
+	if [[ "$uninstalls_required" = "0" ]]; then
+		read -p "Nothing to do! Press enter to quit..."
+	else
+		read -p "$uninstalls_required required. Press enter to continue (Ctrl+C to cancel)..."
+
+		for ((y = 0; y < $COUNT; y++)); do
+			STATUS=${STATUSES[$y]}
+			if [[ "$STATUS" == "installed" ]]; then
+				STATUSES[$y]="uninstalling"
+				display
+
+				do_uninstall $y
+				display
+			fi
+		done
+
+	fi
 fi
 
 printf "\n\n"
