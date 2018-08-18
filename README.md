@@ -6,7 +6,7 @@ Breakout Garden doesn't require any software of its own, but each breakout you u
 
 We've created a handy script to get you started:
 
-1. Plug-in all of your breakout-garden compatible breakouts
+1. Plug in all of your Breakout Garden-compatible breakouts
 2. Run `sudo ./install.sh`
 3. Step through the install process
 4. Enjoy!
