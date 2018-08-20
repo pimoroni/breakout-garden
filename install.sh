@@ -1,23 +1,5 @@
 #!/bin/bash
 
-if [ $(id -u) -ne 0 ]; then
-	printf "Breakout Garden: Installer\n\n"
-	printf "Script must be run as root. Try 'sudo ./install.sh'\n"
-	exit 1
-fi
-
-success() {
-	printf "$(tput setaf 2)$1$(tput setaf 7)"
-}
-
-inform() {
-	printf "$(tput setaf 6)$1$(tput setaf 7)"
-}
-
-warning() {
-	printf "$(tput setaf 1)$1$(tput setaf 7)"
-}
-
 WORKING_DIR=`pwd`
 TMP_DIR="/tmp/breakout-garden"
 LOG_FILE="$TMP_DIR/install.log"
@@ -31,11 +13,36 @@ REPOS=()
 
 PADDING=5
 
-DETECTED=`python autodetect.py --install`
+success() {
+	printf "$(tput setaf 2)$1$(tput setaf 7)"
+}
 
-COUNT=`echo -e "$DETECTED" | wc -l`
+inform() {
+	printf "$(tput setaf 6)$1$(tput setaf 7)"
+}
 
-warning "Note that you'll need I2C enabled to run this installer!\nType 'curl https://get.pimoroni.com/i2c | bash' to enable I2C.\n"
+warning() {
+	printf "$(tput setaf 1)$1$(tput setaf 7)"
+}
+
+if [ $(id -u) -ne 0 ]; then
+	printf "Breakout Garden: Installer\n\n"
+	inform "Script must be run as root. Try 'sudo ./install.sh'\n"
+	exit 1
+fi
+
+if [ ! -c "/dev/i2c-1" ]; then	
+	raspi-config nonint do_i2c 0
+	STATUS=$?
+	if [ $STATUS -eq 0 ]; then
+		inform "\nBreakout Garden requires I2C. We've enabled it for you.\n"
+	else
+		warning "\nWarning,  Breakout Garden requires I2C but we couldn't enable it.\n"
+		printf "\nPlease try 'curl https://get.pimoroni.com/i2c | bash' to enable I2C first.\n"
+		exit 1
+	fi
+	sleep 0.1
+fi
 
 if [ ! -d "$TMP_DIR" ]; then
         mkdir $TMP_DIR
@@ -49,6 +56,9 @@ while getopts "uvf" option; do
 		\? ) printf "Invalid option: -$OPTARG\n"; exit 1;;
 	esac
 done
+
+DETECTED=`python autodetect.py --install`
+COUNT=`echo -e "$DETECTED" | wc -l`
 
 if [[ "$COUNT" -eq "0" ]] || [[ "$DETECTED" == "" ]]; then
 	printf "Sorry, I couldn't find any breakouts!\n"
