@@ -37,7 +37,7 @@ if [ ! -c "/dev/i2c-1" ]; then
 	if [ $STATUS -eq 0 ]; then
 		inform "\nBreakout Garden requires I2C. We've enabled it for you.\n"
 	else
-		warning "\nWarning,  Breakout Garden requires I2C but we couldn't enable it.\n"
+		warning "\nWarning, Breakout Garden requires I2C but we couldn't enable it.\n"
 		printf "\nPlease try 'curl https://get.pimoroni.com/i2c | bash' to enable I2C first.\n"
 		exit 1
 	fi
@@ -45,7 +45,7 @@ if [ ! -c "/dev/i2c-1" ]; then
 fi
 
 if [ ! -d "$TMP_DIR" ]; then
-        mkdir $TMP_DIR
+	mkdir $TMP_DIR
 fi
 
 while getopts "uvf" option; do
