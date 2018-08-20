@@ -35,6 +35,12 @@ DETECTED=`python autodetect.py --install`
 
 COUNT=`echo -e "$DETECTED" | wc -l`
 
+warning "Note that you'll need I2C enabled to run this installer!\nType 'curl https://get.pimoroni.com/i2c | bash' to enable I2C.\n"
+
+if [ ! -d "$TMP_DIR" ]; then
+        mkdir $TMP_DIR
+fi
+
 while getopts "uvf" option; do
 	case $option in
 		u  ) ACTION="uninstall";VERBOSE="true";;
