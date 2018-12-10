@@ -16,24 +16,42 @@ except IOError:
     print("Unable to access /dev/i2c-{}, please ensure i2c is enabled!".format(I2C_BUS))
     sys.exit()
 
+def check_chip_id(i2cc_addr, chip_ids):
+    for register in chip_ids:
+        value = chip_ids[register]
+        if value != bus.read_byte_data(i2c_addr, register):
+            return False
+    return True
+
 def get_device(line):
     parts=[x.strip() for x in line.split(":")]
-    return int(parts[0], 16), parts[1], parts[2], parts[3]
+
+    i2c_addr = int(parts[0][0:4], 16)
+
+    chip_ids = {}
+
+    if(len(parts[0]) > 4):
+        register_map = parts[0][5:-1].split(',')
+        for mapping in register_map:
+            register, value = [int(x, 16) for x in mapping.split('=')]
+            chip_ids[register] = value
+
+    return i2c_addr, parts[1], parts[2], parts[3], chip_ids
 
 devices = [get_device(line) for line in open("breakouts.config").read().strip().split("\n")]
 
 addresses = [device[0] for device in devices]
 
 def identify(find_i2c_addr):
-    for i2c_addr, library, module, name in devices:
-        if i2c_addr == find_i2c_addr:
+    for i2c_addr, library, module, name, chip_ids in devices:
+        if i2c_addr == find_i2c_addr and check_chip_id(i2c_addr, chip_ids):
             installed = True
             try:
                 __import__(module)
             except ImportError:
                 installed = False
             return installed, library, name
-    return None
+    return None, None, None
 
 found_addr = []
 found_devices = {}
@@ -43,6 +61,8 @@ for i2c_addr in addresses:
         bus.read_byte_data(i2c_addr, 0x00)
         found_addr.append(i2c_addr)
         installed, library, name = identify(i2c_addr)
+        if installed is None:
+            continue
         if name not in found_devices:
             found_devices[name] = [installed, library, [i2c_addr]]
         else:
