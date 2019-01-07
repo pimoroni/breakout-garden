@@ -53,6 +53,8 @@ Press Ctrl+C a couple times to exit.
 CITY = "Sheffield"
 COUNTRYCODE = "GB"
 
+# Used to calibrate the sensor
+TEMP_OFFSET = 0.0
 
 # Convert a city name and country code to latitude and longitude
 def get_coords(address):
@@ -113,6 +115,7 @@ sensor.set_humidity_oversample(bme680.OS_2X)
 sensor.set_pressure_oversample(bme680.OS_4X)
 sensor.set_temperature_oversample(bme680.OS_8X)
 sensor.set_filter(bme680.FILTER_SIZE_3)
+sensor.set_temp_offset(TEMP_OFFSET)
 
 # Load fonts
 rr_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'fonts',
@@ -123,6 +126,8 @@ rr_24 = ImageFont.truetype(rr_path, 24)
 rb_20 = ImageFont.truetype(rb_path, 20)
 rr_12 = ImageFont.truetype(rr_path, 12)
 
+# Fetch sensor dating first so that device settings take effect
+sensor.get_sensor_data()
 # Initial values
 low_temp = sensor.data.temperature
 high_temp = sensor.data.temperature
