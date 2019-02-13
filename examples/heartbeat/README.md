@@ -12,7 +12,7 @@ so bear that in mind while using it.**
 
 This example requires:
 
-- A Pimoroni [Breakout Garden](https://shop.pimoroni.com/products/breakout-garden-hat)
+- A Pimoroni [Breakout Garden HAT](https://shop.pimoroni.com/products/breakout-garden-hat) or [Breakout Garden pHAT](https://shop.pimoroni.com/products/breakout-garden-phat)
 - A Pimoroni [MAX30105 Breakout - Heart Rate, Oximeter, Smoke Sensor](https://shop.pimoroni.com/products/max30105-breakout-heart-rate-oximeter-smoke-sensor)
 - A Pimoroni [1.12" OLED Breakout](https://shop.pimoroni.com/products/1-12-oled-breakout)
 
