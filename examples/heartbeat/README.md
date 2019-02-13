@@ -1,12 +1,12 @@
 # Heartbeat example
 
+This example, the Pulse-O-Matic 6000, is a heartbeat plotter and BPM display.
+
 ## Important!
 
 **This code should not be used for medical diagnosis, as the basis for a real smoke
 or fire detector, or in life-critical situations. It's for fun/novelty use only, 
 so bear that in mind while using it.**
-
-This example, the Pulse-O-Matic 6000, is a heartbeat plotter and BPM display.
 
 ## Pre-requisites
 
