@@ -97,7 +97,7 @@ t.start()
 # The main loop that draws values to the OLED
 while True:
     try:
-        img = Image.open("images/seismograph.png").convert(oled.mode)
+        img = Image.open("images/heartbeat.png").convert(oled.mode)
         draw = ImageDraw.Draw(img)
 
         # Draw the heartbeat trace
