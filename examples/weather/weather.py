@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import os
 import time
@@ -79,7 +80,8 @@ icons = {}
 
 for icon in glob.glob("icons/*.png"):
     icon_name = icon.split("/")[1].replace(".png", "")
-    icon_image = Image.open(icon)
+    f = open(icon)
+    icon_image = Image.open(f)
     icons[icon_name] = icon_image
 
 weather_icon = None
@@ -132,13 +134,13 @@ while True:
     if time.time() - last_checked > 60:
         weather = get_weather(location_string)
         last_checked = time.time()
-    
+
     # Find correct weather icon for summary
     if weather:
         summary = weather["summary"]
         for icon in icon_map:
             if summary in icon_map[icon]:
-                weather_icon = icon
+                weather_icon = icons[icon]
                 break
     else:
         print("Warning, no weather information found!")
@@ -166,11 +168,11 @@ while True:
 
         # Write temp. and press. to image
         draw.text((8, 22), "{0: >4}".format(int(press)), fill="white", font=rb_20)
-        draw.text((86, 12), "{0: >2}°".format(int(temp)), fill="white", font=rb_20)
+        draw.text((86, 12), u"{0: >2}°".format(int(temp)), fill="white", font=rb_20)
 
         # Write min and max temp. to image
-        draw.text((80, 0), "max: {0: >2}°".format(int(high_temp)), fill="white", font=rr_12)
-        draw.text((80, 110), "min: {0: >2}°".format(int(low_temp)), fill="white", font=rr_12)
+        draw.text((80, 0), u"max: {0: >2}°".format(int(high_temp)), fill="white", font=rr_12)
+        draw.text((80, 110), u"min: {0: >2}°".format(int(low_temp)), fill="white", font=rr_12)
 
     # Write the 24h time and blink the separator every second
     if int(time.time()) % 2 == 0:
