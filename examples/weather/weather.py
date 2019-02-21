@@ -188,15 +188,15 @@ while True:
             high_temp = temp
 
         # Write temp. and press. to image
-        draw.text((8, 22), "{0: >4}".format(int(press)),
+        draw.text((8, 22), "{0: >4}".format(int(round(press))),
                   fill="white", font=rb_20)
-        draw.text((86, 12), u"{0: >2}°".format(int(temp)),
+        draw.text((86, 12), u"{0: >2}°".format(int(round(temp))),
                   fill="white", font=rb_20)
 
         # Write min and max temp. to image
-        draw.text((80, 0), u"max: {0: >2}°".format(int(high_temp)),
+        draw.text((80, 0), u"max: {0: >2}°".format(int(round(high_temp))),
                   fill="white", font=rr_12)
-        draw.text((80, 110), u"min: {0: >2}°".format(int(low_temp)),
+        draw.text((80, 110), u"min: {0: >2}°".format(int(round(low_temp))),
                   fill="white", font=rr_12)
 
     # Write the 24h time and blink the separator every second
