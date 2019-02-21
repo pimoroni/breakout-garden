@@ -169,7 +169,8 @@ while True:
     background = Image.open("images/weather.png").convert(oled.mode)
 
     # Place the weather icon and draw the background
-    background.paste(weather_icon, (10, 46))
+    if weather_icon:
+        background.paste(weather_icon, (10, 46))
     draw = ImageDraw.ImageDraw(background)
 
     # Gets temp. and press. and keeps track of daily min and max temp
