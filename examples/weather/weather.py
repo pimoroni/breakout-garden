@@ -13,23 +13,31 @@ from PIL import ImageDraw
 import bme680
 
 from luma.core.interface.serial import i2c
-from luma.core.render import canvas
 from luma.oled.device import sh1106
 
 try:
     import requests
 except ImportError:
-    exit("This script requires the requests module\nInstall with: sudo pip install requests")
+    exit("""
+This script requires the requests module
+Install with: sudo pip install requests
+""")
 
 try:
     import geocoder
 except ImportError:
-    exit("This script requires the geocoder module\nInstall with: sudo pip install geocoder")
+    exit("""
+This script requires the geocoder module
+Install with: sudo pip install geocoder
+""")
 
 try:
     from bs4 import BeautifulSoup
 except ImportError:
-    exit("This script requires the bs4 module\nInstall with: sudo pip install beautifulsoup4")
+    exit("""
+This script requires the bs4 module
+Install with: sudo pip install beautifulsoup4
+""")
 
 print("""This Pimoroni Breakout Garden example requires a
 BME680 Environmental Sensor Breakout and a 1.12" OLED Breakout.
@@ -45,17 +53,20 @@ Press Ctrl+C a couple times to exit.
 CITY = "Sheffield"
 COUNTRYCODE = "GB"
 
+
 # Convert a city name and country code to latitude and longitude
 def get_coords(address):
     g = geocoder.arcgis(address)
     coords = g.latlng
     return coords
 
+
 # Query Dark Sky (https://darksky.net/) to scrape current weather data
 def get_weather(address):
     coords = get_coords(address)
     weather = {}
-    res = requests.get("https://darksky.net/forecast/{}/uk212/en".format(",".join([str(c) for c in coords])))
+    res = requests.get("https://darksky.net/forecast/{}/uk212/en".format(","
+                       .join([str(c) for c in coords])))
     if res.status_code == 200:
         soup = BeautifulSoup(res.content, "lxml")
         curr = soup.find_all("span", "currently")
@@ -63,6 +74,7 @@ def get_weather(address):
         return weather
     else:
         return weather
+
 
 # This maps the weather summary from Dark Sky
 # to the appropriate weather icons
@@ -87,7 +99,8 @@ for icon in glob.glob("icons/*.png"):
 weather_icon = None
 
 # Get initial weather data for the given location
-location_string = "{city}, {countrycode}".format(city=CITY, countrycode=COUNTRYCODE)
+location_string = "{city}, {countrycode}".format(city=CITY,
+                                                 countrycode=COUNTRYCODE)
 weather = get_weather(location_string)
 
 # Set up OLED
@@ -102,8 +115,10 @@ sensor.set_temperature_oversample(bme680.OS_8X)
 sensor.set_filter(bme680.FILTER_SIZE_3)
 
 # Load fonts
-rr_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'fonts', 'Roboto-Regular.ttf'))
-rb_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'fonts', 'Roboto-Black.ttf'))
+rr_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'fonts',
+                                       'Roboto-Regular.ttf'))
+rb_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'fonts',
+                                       'Roboto-Black.ttf'))
 rr_24 = ImageFont.truetype(rr_path, 24)
 rb_20 = ImageFont.truetype(rb_path, 20)
 rr_12 = ImageFont.truetype(rr_path, 12)
@@ -167,27 +182,31 @@ while True:
             high_temp = temp
 
         # Write temp. and press. to image
-        draw.text((8, 22), "{0: >4}".format(int(press)), fill="white", font=rb_20)
-        draw.text((86, 12), u"{0: >2}°".format(int(temp)), fill="white", font=rb_20)
+        draw.text((8, 22), "{0: >4}".format(int(press)),
+                  fill="white", font=rb_20)
+        draw.text((86, 12), u"{0: >2}°".format(int(temp)),
+                  fill="white", font=rb_20)
 
         # Write min and max temp. to image
-        draw.text((80, 0), u"max: {0: >2}°".format(int(high_temp)), fill="white", font=rr_12)
-        draw.text((80, 110), u"min: {0: >2}°".format(int(low_temp)), fill="white", font=rr_12)
+        draw.text((80, 0), u"max: {0: >2}°".format(int(high_temp)),
+                  fill="white", font=rr_12)
+        draw.text((80, 110), u"min: {0: >2}°".format(int(low_temp)),
+                  fill="white", font=rr_12)
 
     # Write the 24h time and blink the separator every second
     if int(time.time()) % 2 == 0:
-        draw.text((4, 98), datetime.datetime.now().strftime("%H:%M"), fill="white", font=rr_24)
+        draw.text((4, 98), datetime.datetime.now().strftime("%H:%M"),
+                  fill="white", font=rr_24)
     else:
-        draw.text((4, 98), datetime.datetime.now().strftime("%H %M"), fill="white", font=rr_24)
+        draw.text((4, 98), datetime.datetime.now().strftime("%H %M"),
+                  fill="white", font=rr_24)
 
     # These lines display the temp. on the thermometer image
     draw.rectangle([(97, 43), (100, 86)], fill="black")
     temp_offset = 86 - ((86 - 43) * ((temp - 20) / (32 - 20)))
-    print(temp_offset)
     draw.rectangle([(97, temp_offset), (100, 86)], fill="white")
 
     # Display the completed image on the OLED
     oled.display(background)
 
     time.sleep(0.1)
-
