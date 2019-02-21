@@ -12,8 +12,7 @@ This example requires:
 - A Pimoroni [BME680 Breakout](https://shop.pimoroni.com/products/bme680-breakout)
 - A Pimoroni [1.12" OLED Breakout](https://shop.pimoroni.com/products/1-12-oled-breakout)
 
-You'll need to `sudo pip3 install requests` to install the requests library to be
-able to query the Yahoo Weather API.
+You'll need the requests (`sudo pip install requests`), geocoder (`sudo pip install geocoder`), and BeautifulSoup4 (`sudo pip install beautifulsoup4`) libraries to query the Dark Sky weather page.
 
 ## Installation
 
@@ -27,7 +26,4 @@ To run this example, type `./weather.py` in the terminal
 
 ## Notes
 
-This example uses your IP address to determine your location. You can disable this
-by removing or commenting out the lines near `loc_data = get_location()` and 
-hard-coding your city and country code at the top of the file, the variables called
-`CITY` and `COUNTRYCODE`.
+This example uses Sheffield as the default location, so you'll need to specify your city and country code at the top of the file, changing the variables called `CITY` and `COUNTRYCODE` to your current location.
