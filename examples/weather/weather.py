@@ -5,6 +5,7 @@ import os
 import time
 import datetime
 import glob
+import logging
 
 from PIL import Image
 from PIL import ImageFont
@@ -14,6 +15,8 @@ import bme680
 
 from luma.core.interface.serial import i2c
 from luma.oled.device import sh1106
+
+logging.basicConfig(level=os.environ.get("LOGLEVEL", "WARNING"))
 
 try:
     import requests
