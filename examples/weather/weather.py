@@ -63,6 +63,7 @@ TEMP_OFFSET = 0.0
 def get_coords(address):
     g = geocoder.arcgis(address)
     coords = g.latlng
+    logging.info("Location coordinates: %s", coords)
     return coords
 
 
@@ -100,14 +101,29 @@ for icon in glob.glob("icons/*.png"):
     icon_image = Image.open(f)
     icons[icon_name] = icon_image
 
-weather_icon = None
 
-# Get initial weather data for the given location
 location_string = "{city}, {countrycode}".format(city=CITY,
                                                  countrycode=COUNTRYCODE)
 coords = get_coords(location_string)
 
-weather = get_weather(coords)
+
+def get_weather_icon(weather):
+    if weather:
+        summary = weather["summary"]
+
+        for icon in icon_map:
+            if summary in icon_map[icon]:
+                logging.info("Weather icon: %s", icon)
+                return icons[icon]
+        logging.error("Could not determine icon for weather")
+        return None
+    else:
+        logging.error("No weather information provided to get icon")
+        return None
+
+
+# Get initial weather data for the given location
+weather_icon = get_weather_icon(get_weather(coords))
 
 # Set up OLED
 oled = sh1106(i2c(port=1, address=0x3C), rotate=2, height=128, width=128)
@@ -136,19 +152,6 @@ sensor.get_sensor_data()
 low_temp = sensor.data.temperature
 high_temp = sensor.data.temperature
 curr_date = datetime.date.today().day
-weather_icon = None
-
-# Find correct weather icon for summary
-if weather:
-    summary = weather["summary"]
-
-    for icon in icon_map:
-        if summary in icon_map[icon]:
-            weather_icon = icon
-            break
-
-else:
-    print("Warning, no weather information found!")
 
 last_checked = time.time()
 
@@ -156,18 +159,8 @@ last_checked = time.time()
 while True:
     # Limit calls to Dark Sky to 1 per minute
     if time.time() - last_checked > 60:
-        weather = get_weather(coords)
+        weather_icon = get_weather_icon(get_weather(coords))
         last_checked = time.time()
-
-    # Find correct weather icon for summary
-    if weather:
-        summary = weather["summary"]
-        for icon in icon_map:
-            if summary in icon_map[icon]:
-                weather_icon = icons[icon]
-                break
-    else:
-        print("Warning, no weather information found!")
 
     # Load in the background image
     background = Image.open("images/weather.png").convert(oled.mode)
