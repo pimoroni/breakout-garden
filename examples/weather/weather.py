@@ -67,8 +67,7 @@ def get_coords(address):
 
 
 # Query Dark Sky (https://darksky.net/) to scrape current weather data
-def get_weather(address):
-    coords = get_coords(address)
+def get_weather(coords):
     weather = {}
     res = requests.get("https://darksky.net/forecast/{}/uk212/en".format(","
                        .join([str(c) for c in coords])))
@@ -106,7 +105,9 @@ weather_icon = None
 # Get initial weather data for the given location
 location_string = "{city}, {countrycode}".format(city=CITY,
                                                  countrycode=COUNTRYCODE)
-weather = get_weather(location_string)
+coords = get_coords(location_string)
+
+weather = get_weather(coords)
 
 # Set up OLED
 oled = sh1106(i2c(port=1, address=0x3C), rotate=2, height=128, width=128)
@@ -155,7 +156,7 @@ last_checked = time.time()
 while True:
     # Limit calls to Dark Sky to 1 per minute
     if time.time() - last_checked > 60:
-        weather = get_weather(location_string)
+        weather = get_weather(coords)
         last_checked = time.time()
 
     # Find correct weather icon for summary
