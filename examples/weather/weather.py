@@ -5,6 +5,7 @@ import os
 import time
 import datetime
 import glob
+import logging
 
 from PIL import Image
 from PIL import ImageFont
@@ -14,6 +15,8 @@ import bme680
 
 from luma.core.interface.serial import i2c
 from luma.oled.device import sh1106
+
+logging.basicConfig(level=os.environ.get("LOGLEVEL", "WARNING"))
 
 try:
     import requests
@@ -53,17 +56,19 @@ Press Ctrl+C a couple times to exit.
 CITY = "Sheffield"
 COUNTRYCODE = "GB"
 
+# Used to calibrate the sensor
+TEMP_OFFSET = 0.0
 
 # Convert a city name and country code to latitude and longitude
 def get_coords(address):
     g = geocoder.arcgis(address)
     coords = g.latlng
+    logging.info("Location coordinates: %s", coords)
     return coords
 
 
 # Query Dark Sky (https://darksky.net/) to scrape current weather data
-def get_weather(address):
-    coords = get_coords(address)
+def get_weather(coords):
     weather = {}
     res = requests.get("https://darksky.net/forecast/{}/uk212/en".format(","
                        .join([str(c) for c in coords])))
@@ -96,12 +101,29 @@ for icon in glob.glob("icons/*.png"):
     icon_image = Image.open(f)
     icons[icon_name] = icon_image
 
-weather_icon = None
 
-# Get initial weather data for the given location
 location_string = "{city}, {countrycode}".format(city=CITY,
                                                  countrycode=COUNTRYCODE)
-weather = get_weather(location_string)
+coords = get_coords(location_string)
+
+
+def get_weather_icon(weather):
+    if weather:
+        summary = weather["summary"]
+
+        for icon in icon_map:
+            if summary in icon_map[icon]:
+                logging.info("Weather icon: %s", icon)
+                return icons[icon]
+        logging.error("Could not determine icon for weather")
+        return None
+    else:
+        logging.error("No weather information provided to get icon")
+        return None
+
+
+# Get initial weather data for the given location
+weather_icon = get_weather_icon(get_weather(coords))
 
 # Set up OLED
 oled = sh1106(i2c(port=1, address=0x3C), rotate=2, height=128, width=128)
@@ -113,6 +135,7 @@ sensor.set_humidity_oversample(bme680.OS_2X)
 sensor.set_pressure_oversample(bme680.OS_4X)
 sensor.set_temperature_oversample(bme680.OS_8X)
 sensor.set_filter(bme680.FILTER_SIZE_3)
+sensor.set_temp_offset(TEMP_OFFSET)
 
 # Load fonts
 rr_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'fonts',
@@ -123,23 +146,12 @@ rr_24 = ImageFont.truetype(rr_path, 24)
 rb_20 = ImageFont.truetype(rb_path, 20)
 rr_12 = ImageFont.truetype(rr_path, 12)
 
+# Fetch sensor dating first so that device settings take effect
+sensor.get_sensor_data()
 # Initial values
 low_temp = sensor.data.temperature
 high_temp = sensor.data.temperature
 curr_date = datetime.date.today().day
-weather_icon = None
-
-# Find correct weather icon for summary
-if weather:
-    summary = weather["summary"]
-
-    for icon in icon_map:
-        if summary in icon_map[icon]:
-            weather_icon = icon
-            break
-
-else:
-    print("Warning, no weather information found!")
 
 last_checked = time.time()
 
@@ -147,24 +159,15 @@ last_checked = time.time()
 while True:
     # Limit calls to Dark Sky to 1 per minute
     if time.time() - last_checked > 60:
-        weather = get_weather(location_string)
+        weather_icon = get_weather_icon(get_weather(coords))
         last_checked = time.time()
-
-    # Find correct weather icon for summary
-    if weather:
-        summary = weather["summary"]
-        for icon in icon_map:
-            if summary in icon_map[icon]:
-                weather_icon = icons[icon]
-                break
-    else:
-        print("Warning, no weather information found!")
 
     # Load in the background image
     background = Image.open("images/weather.png").convert(oled.mode)
 
     # Place the weather icon and draw the background
-    background.paste(weather_icon, (10, 46))
+    if weather_icon:
+        background.paste(weather_icon, (10, 46))
     draw = ImageDraw.ImageDraw(background)
 
     # Gets temp. and press. and keeps track of daily min and max temp
@@ -182,15 +185,15 @@ while True:
             high_temp = temp
 
         # Write temp. and press. to image
-        draw.text((8, 22), "{0: >4}".format(int(press)),
+        draw.text((8, 22), "{0:4.0f}".format(press),
                   fill="white", font=rb_20)
-        draw.text((86, 12), u"{0: >2}°".format(int(temp)),
+        draw.text((86, 12), u"{0:2.0f}°".format(temp),
                   fill="white", font=rb_20)
 
         # Write min and max temp. to image
-        draw.text((80, 0), u"max: {0: >2}°".format(int(high_temp)),
+        draw.text((80, 0), u"max: {0:2.0f}°".format(high_temp),
                   fill="white", font=rr_12)
-        draw.text((80, 110), u"min: {0: >2}°".format(int(low_temp)),
+        draw.text((80, 110), u"min: {0:2.0f}°".format(low_temp),
                   fill="white", font=rr_12)
 
     # Write the 24h time and blink the separator every second
