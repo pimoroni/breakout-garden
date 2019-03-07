@@ -1,18 +1,19 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 import time
-from ltr559 import setup, update_sensor, get_lux, get_proximity
+import ltr559
 from rgbmatrix5x5 import RGBMatrix5x5
 
 print("""This Pimoroni Breakout Garden example requires an
 LTR-559 Light and Proximity Breakout and a 5x5 RGB Matrix Breakout.
 This example creates a little nightlight that can be toggled on or
 off by tapping the proximity sensor with your finger, or triggered
-automatically when it's dark. Press Ctrl+C a couple times to exit.
+automatically when it's dark.
+
+Press Ctrl+C to exit.
 """)
 
-# Set up the LTR-559 sensor
-setup()
+ltr559.setup()
 
 # Set up the 5x5 RGB matrix
 rgbmatrix5x5 = RGBMatrix5x5()
@@ -44,17 +45,17 @@ def toggle_matrix():
 
 
 # Read the sensor once, as the first values are always squiffy
-update_sensor()
-lux = get_lux()
-prox = get_proximity()
+ltr559.update_sensor()
+lux = ltr559.get_lux()
+prox =ltr559. get_proximity()
 time.sleep(1)
 
 try:
     while True:
         # Read the light and proximity sensor
-        update_sensor()
-        lux = get_lux()
-        prox = get_proximity()
+        ltr559.update_sensor()
+        lux = ltr559.get_lux()
+        prox = ltr559.get_proximity()
 
         # If it's dark and the light isn't toggled on, turn on
         if lux < light_threshold and not toggled:
@@ -86,7 +87,8 @@ try:
                 if state != last_state:
                     print("Toggling light ON")
                 toggle_matrix()
-            # Debounce to stop retriggering
+            # Wait a short while to prevent the on/off switch
+            # from immediately re-triggering
             time.sleep(0.5)
 
         elif prox < prox_threshold and lux >= light_threshold:
