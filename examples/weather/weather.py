@@ -52,6 +52,8 @@ indicating the current local weather conditions.
 Press Ctrl+C a couple times to exit.
 """)
 
+TEMPERATURE_UPDATE_INTERVAL = 0.1 # in seconds
+
 # Default to Sheffield-on-Sea for location
 CITY = "Sheffield"
 COUNTRYCODE = "GB"
@@ -218,4 +220,4 @@ while True:
     # Display the completed image on the OLED
     oled.display(background)
 
-    time.sleep(0.1)
+    time.sleep(TEMPERATURE_UPDATE_INTERVAL)
