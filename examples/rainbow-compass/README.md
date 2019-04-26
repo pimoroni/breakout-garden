@@ -1,8 +1,8 @@
 # Rainbow compass example
 
-calculates and displays compass heading as an
+Calculates and displays compass heading as an
 RGB colour around the hue wheel, with North being red, South cyan,
-East green, and West purple, appromximately.
+East green, and West purple, approximately.
 
 ## Pre-requisites
 
