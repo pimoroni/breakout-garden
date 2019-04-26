@@ -18,6 +18,6 @@ Pop the breakouts into your Breakout Garden, and then run the `install.sh` scrip
 
 ## Running this example
 
-To run this example, type `./rainbow-compass.py` in the terminal.
+To run this example, type `./rainbow-compass.py` in the terminal, and then walk through the calibration steps.
 
 Depending on the orientation of you LSM303D breakout, you can change the line that says `Y = 2` in the `raw_heading` function to e.g. `Y = 1` if you have the breakout flat rather than vertical.
