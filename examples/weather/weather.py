@@ -52,6 +52,8 @@ indicating the current local weather conditions.
 Press Ctrl+C a couple times to exit.
 """)
 
+TEMPERATURE_UPDATE_INTERVAL = 0.1 # in seconds
+
 # Default to Sheffield-on-Sea for location
 CITY = "Sheffield"
 COUNTRYCODE = "GB"
@@ -70,15 +72,21 @@ def get_coords(address):
 # Query Dark Sky (https://darksky.net/) to scrape current weather data
 def get_weather(coords):
     weather = {}
-    res = requests.get("https://darksky.net/forecast/{}/uk212/en".format(","
-                       .join([str(c) for c in coords])))
-    if res.status_code == 200:
-        soup = BeautifulSoup(res.content, "lxml")
-        curr = soup.find_all("span", "currently")
-        weather["summary"] = curr[0].img["alt"].split()[0]
-        return weather
-    else:
-        return weather
+    try:
+        res = requests.get("https://darksky.net/forecast/{}/uk212/en".format(","
+                           .join([str(c) for c in coords])))
+        if res.status_code == 200:
+            soup = BeautifulSoup(res.content, "lxml")
+            curr = soup.find("span", "currently")
+            if curr:
+                img_name = curr.img["alt"].split()[0]
+                logging.info("Weather summary: %s", img_name)
+                weather["summary"] = img_name
+    except:
+        logging.error("Could not get weather data from DarkSky")
+        pass
+
+    return weather
 
 
 # This maps the weather summary from Dark Sky
@@ -212,4 +220,4 @@ while True:
     # Display the completed image on the OLED
     oled.display(background)
 
-    time.sleep(0.1)
+    time.sleep(TEMPERATURE_UPDATE_INTERVAL)
