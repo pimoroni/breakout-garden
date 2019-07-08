@@ -18,7 +18,7 @@ LSM303D 6DoF Breakout and a 1.12" OLED Breakout.
 The Dino-Detect v1.2 beta is a dino stomp detector. It's a
 UNIX system, I know this.
 
-Press Ctrl+C a couple times to exit.
+Press Ctrl+C to exit.
 """)
 
 # Set up OLED
@@ -77,7 +77,13 @@ def sample():
 # The thread to measure acclerometer values
 
 t = Thread(target=sample)
+t.daemon = True
 t.start()
+
+# Wait for at least one data oint
+
+while len(points) == 0:
+    pass
 
 # The main loop that draws values to the OLED
 
