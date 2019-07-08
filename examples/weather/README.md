@@ -18,7 +18,15 @@ You'll need the requests (`sudo pip install requests`), geocoder (`sudo pip inst
 
 Pop the breakouts into your Breakout Garden, and then run the `install.sh`
 script in the root of this repository with `sudo ./install.sh` to automagically
-install all of the required libraries.
+install all of the libraries to run your breakouts.
+
+For this example you'll need to make sure some additional software is installed:
+
+```
+sudo apt install python3-lxml python3-pil
+sudo pip3 install requests geocoder beautifulsoup4
+```
+
 
 ## Running this example
 

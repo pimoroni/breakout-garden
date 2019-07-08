@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import os
@@ -8,14 +8,28 @@ import glob
 import logging
 import sys
 
-from PIL import Image
-from PIL import ImageFont
-from PIL import ImageDraw
+try:
+    import requests
+    import geocoder
+    import lxml
+    from bs4 import BeautifulSoup
+    from PIL import Image
+    from PIL import ImageFont
+    from PIL import ImageDraw
+except ImportError:
+    print("""
+This script requires several modules to run correctly.
+Install with:
+sudo pip install requests geocoder beautifulsoup4
+sudo apt install python{v}-lxml python{v}-pil
+""".format(v="" if sys.version_info.major == 2 else sys.version_info.major))
+    sys.exit(1)
 
 import bme680
-
 from luma.core.interface.serial import i2c
 from luma.oled.device import sh1106
+
+
 
 
 TEMPERATURE_UPDATE_INTERVAL = 0.1  # in seconds
@@ -29,21 +43,6 @@ TEMP_OFFSET = 0.0
 
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "WARNING"))
-
-
-try:
-    import requests
-    import geocoder
-    import lxml
-    from bs4 import BeautifulSoup
-except ImportError:
-    print("""
-This script requires several modules to run correctly.
-Install with:
-sudo pip install requests geocoder beautifulsoup4
-sudo apt install python-lxml
-""")
-    sys.exit(1)
 
 
 print("""This Pimoroni Breakout Garden example requires a

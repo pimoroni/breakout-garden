@@ -2,10 +2,18 @@
 
 import os
 import time
+import sys
 
-from PIL import Image
-from PIL import ImageFont
-from PIL import ImageDraw
+try:
+    from PIL import Image
+    from PIL import ImageFont
+    from PIL import ImageDraw
+except ImportError:
+    print("""This example requires PIL.
+Install with: sudo apt install python{v}-pil
+""".format(v="" if sys.version_info.major == 2 else sys.version_info.major))
+    sys.exit(1)
+
 from lsm303d import LSM303D
 from threading import Thread
 from luma.core.interface.serial import i2c
