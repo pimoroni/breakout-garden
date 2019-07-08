@@ -6,6 +6,7 @@ import time
 import datetime
 import glob
 import logging
+import sys
 
 from PIL import Image
 from PIL import ImageFont
@@ -16,31 +17,34 @@ import bme680
 from luma.core.interface.serial import i2c
 from luma.oled.device import sh1106
 
+
+TEMPERATURE_UPDATE_INTERVAL = 0.1  # in seconds
+
+# Default to Sheffield-on-Sea for location
+CITY = "Sheffield"
+COUNTRYCODE = "GB"
+
+# Used to calibrate the sensor
+TEMP_OFFSET = 0.0
+
+
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "WARNING"))
+
 
 try:
     import requests
-except ImportError:
-    exit("""
-This script requires the requests module
-Install with: sudo pip install requests
-""")
-
-try:
     import geocoder
-except ImportError:
-    exit("""
-This script requires the geocoder module
-Install with: sudo pip install geocoder
-""")
-
-try:
+    import lxml
     from bs4 import BeautifulSoup
 except ImportError:
-    exit("""
-This script requires the bs4 module
-Install with: sudo pip install beautifulsoup4
+    print("""
+This script requires several modules to run correctly.
+Install with:
+sudo pip install requests geocoder beautifulsoup4
+sudo apt install python-lxml
 """)
+    sys.exit(1)
+
 
 print("""This Pimoroni Breakout Garden example requires a
 BME680 Environmental Sensor Breakout and a 1.12" OLED Breakout.
@@ -52,14 +56,6 @@ indicating the current local weather conditions.
 Press Ctrl+C a couple times to exit.
 """)
 
-TEMPERATURE_UPDATE_INTERVAL = 0.1 # in seconds
-
-# Default to Sheffield-on-Sea for location
-CITY = "Sheffield"
-COUNTRYCODE = "GB"
-
-# Used to calibrate the sensor
-TEMP_OFFSET = 0.0
 
 # Convert a city name and country code to latitude and longitude
 def get_coords(address):
@@ -82,8 +78,8 @@ def get_weather(coords):
                 img_name = curr.img["alt"].split()[0]
                 logging.info("Weather summary: %s", img_name)
                 weather["summary"] = img_name
-    except:
-        logging.error("Could not get weather data from DarkSky")
+    except requests.exceptions.RequestException as e:
+        logging.error("Could not get weather data from DarkSky: {}".format(e))
         pass
 
     return weather
