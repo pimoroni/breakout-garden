@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 
 import time
-import ltr559
+try:
+    # Transitional fix for breaking change in LTR559
+    from ltr559 import LTR559
+    ltr559 = LTR559()
+except ImportError:
+    import ltr559
 from rgbmatrix5x5 import RGBMatrix5x5
 
 print("""This Pimoroni Breakout Garden example requires an
