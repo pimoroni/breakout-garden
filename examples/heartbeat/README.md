@@ -12,15 +12,34 @@ so bear that in mind while using it.**
 
 This example requires:
 
-- A Pimoroni [Breakout Garden HAT](https://shop.pimoroni.com/products/breakout-garden-hat) or [Breakout Garden pHAT](https://shop.pimoroni.com/products/breakout-garden-phat)
+- A Pimoroni [Breakout Garden HAT](https://shop.pimoroni.com/products/breakout-garden-hat-i2c-spi)
 - A Pimoroni [MAX30105 Breakout - Heart Rate, Oximeter, Smoke Sensor](https://shop.pimoroni.com/products/max30105-breakout-heart-rate-oximeter-smoke-sensor)
-- A Pimoroni [1.12" OLED Breakout](https://shop.pimoroni.com/products/1-12-oled-breakout)
+- A Pimoroni [1.12" OLED Breakout (SPI)](https://shop.pimoroni.com/products/1-12-oled-breakout)
 
 ## Installation
 
 Pop the breakouts into your Breakout Garden, and then run the `install.sh`
 script in the root of this repository with `sudo ./install.sh` to automagically
-install all of the required libraries.
+install the libraries to run the I2C breakouts.
+
+For this example you'll need to make sure some additional software is installed:
+
+```
+sudo apt install python3-pil
+```
+
+You'll need to clone and install the library for the 1.12" OLED Breakout (SPI)
+as follows:
+
+```
+git clone https://github.com/pimoroni/sh1106-python
+sudo ./install.sh
+```
+
+This example assumes that you have the OLED plugged into the front slot on the
+Breakout Garden HAT, which should also work with the Breakout Garden Mini HAT.
+To change it to the back slot, change `device=1` to `device=0` on the line
+where the OLED is set up.
 
 ## Running this example
 
@@ -36,9 +55,3 @@ If you're using your MAX30105 Breakout with Breakout Garden, then
 we'd recommend using one of our 
 [Breakout Garden Extender Kits](https://shop.pimoroni.com/products/breakout-garden-extender-kit)
 with some [female to female jumper jerky](https://shop.pimoroni.com/products/jumper-jerky?variant=348491271).
-
-## Notes
-
-You can add (or edit) the line `dtparam=i2c_arm_baudrate=1000000` at the bottom 
-of your `/boot/config.txt` file to speed up your I2C a bit and improve the speed 
-of this example.

@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
 
 import time
-try:
-    # Transitional fix for breaking change in LTR559
-    from ltr559 import LTR559
-    ltr559 = LTR559()
-except ImportError:
-    import ltr559
+
+from ltr559 import LTR559
 from rgbmatrix5x5 import RGBMatrix5x5
 
 print("""This Pimoroni Breakout Garden example requires an
@@ -18,7 +14,9 @@ automatically when it's dark.
 Press Ctrl+C to exit.
 """)
 
-ltr559.setup()
+# Set up the LTR-559 sensor
+
+ltr559 = LTR559()
 
 # Set up the 5x5 RGB matrix
 rgbmatrix5x5 = RGBMatrix5x5()

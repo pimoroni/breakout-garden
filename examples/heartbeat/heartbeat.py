@@ -12,7 +12,7 @@ from PIL import ImageFont
 from PIL import ImageDraw
 
 from threading import Thread
-from luma.core.interface.serial import i2c
+from luma.core.interface.serial import spi
 from luma.oled.device import sh1106
 
 from max30105 import MAX30105, HeartRate
@@ -22,7 +22,7 @@ NOTE! This code should not be used for medical diagnosis. It's
 for fun/novelty use only, so bear that in mind while using it.
 
 This Pimoroni Breakout Garden example requires a
-MAX30105 Breakout and a 1.12" OLED Breakout.
+MAX30105 Breakout and a 1.12" OLED Breakout (SPI).
 
 The Pulse-O-Matic 6000 is a heartbeat plotter and BPM display.
 
@@ -30,7 +30,7 @@ Press Ctrl+C a couple times to exit.
 """)
 
 # Set up OLED
-oled = sh1106(i2c(port=1, address=0x3C), rotate=2, height=128, width=128)
+oled = sh1106(spi(port=0, device=1, gpio_DC=9), rotate=2, height=128, width=128)
 
 # Load fonts
 lsb_18 = ImageFont.truetype("fonts/LiberationSans-Bold.ttf", 18)
@@ -60,7 +60,7 @@ beat_status = False
 
 
 def sample():
-    """Function to thread accelerometer values separately to
+    """Function to thread heartbeat values separately to
  OLED drawing"""
     global bpm, bpm_avg, beat_detected, beat_status
 

@@ -16,12 +16,12 @@ Install with: sudo apt install python{v}-pil
 
 from lsm303d import LSM303D
 from threading import Thread
-from luma.core.interface.serial import i2c
+from luma.core.interface.serial import spi
 from luma.core.render import canvas
 from luma.oled.device import sh1106
 
 print("""This Pimoroni Breakout Garden example requires an
-LSM303D 6DoF Breakout and a 1.12" OLED Breakout.
+LSM303D 6DoF Breakout and a 1.12" OLED Breakout (SPI).
 
 The Dino-Detect v1.2 beta is a dino stomp detector. It's a
 UNIX system, I know this.
@@ -31,7 +31,7 @@ Press Ctrl+C to exit.
 
 # Set up OLED
 
-oled = sh1106(i2c(port=1, address=0x3C), rotate=2, height=128, width=128)
+oled = sh1106(spi(port=0, device=1, gpio_DC=9), rotate=2, height=128, width=128)
 
 # Load fonts
 

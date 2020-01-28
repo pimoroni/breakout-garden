@@ -9,14 +9,14 @@ import colorsys
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
-from luma.core.interface.serial import i2c
+from luma.core.interface.serial import spi
 from luma.core.render import canvas
 from luma.oled.device import sh1106
 from rgbmatrix5x5 import RGBMatrix5x5
 
 print("""
 This Pimoroni Breakout Garden example requires a VEML6075 UV
-Breakout, a 5x5 RGB Matrix Breakout, and a 1.12" OLED Breakout.
+Breakout, a 5x5 RGB Matrix Breakout, and a 1.12" OLED Breakout (SPI).
 
 The UV-O-Meter 3000 displays UV levels visually and in text.
 
@@ -53,7 +53,7 @@ rgbmatrix5x5.set_clear_on_exit()
 rgbmatrix5x5.set_brightness(1.0)
 
 # Set up OLED
-oled = sh1106(i2c(port=1, address=0x3C), rotate=2, height=128, width=128)
+oled = sh1106(spi(port=0, device=1, gpio_DC=9), rotate=2, height=128, width=128)
 
 # Load fonts
 rr_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'fonts', 'Roboto-Regular.ttf'))

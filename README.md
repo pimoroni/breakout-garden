@@ -1,6 +1,8 @@
 # Breakout Garden
 
-Software and examples for the Pimoroni [Breakout Garden](https://shop.pimoroni.com/products/breakout-garden-hat), a simple way to build projects using [breakouts](https://shop.pimoroni.com/collections/pimoroni-breakouts), with absolutely no soldering required.
+Software and examples for the Pimoroni [Breakout Garden](https://shop.pimoroni.com/products/breakout-garden-hat-i2c-spi), 
+a simple way to build projects using [breakouts](https://shop.pimoroni.com/collections/pimoroni-breakouts), with 
+absolutely no soldering required.
 
 ## Installing
 
@@ -18,7 +20,8 @@ We've created a handy script to get you started:
 
 ## Examples
 
-We've put together a few fun [examples](examples/) to show what's possible with Breakout Garden. Each example has its own README telling you about it, which breakouts are required, and about how to use it.
+We've put together a few fun [examples](examples/) to show what's possible with Breakout Garden. Each example 
+has its own README telling you about it, which breakouts are required, and about how to use it.
 
 ## Bugs, Issues and Problems
 

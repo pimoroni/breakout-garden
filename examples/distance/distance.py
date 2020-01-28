@@ -9,12 +9,12 @@ from PIL import ImageDraw
 
 import VL53L1X
 
-from luma.core.interface.serial import i2c
+from luma.core.interface.serial import spi
 from luma.core.render import canvas
 from luma.oled.device import sh1106
 
 print("""This Pimoroni Breakout Garden example requires an
-VL53L1X Time of Flight Sensor Breakout and a 1.12" OLED Breakout.
+VL53L1X Time of Flight Sensor Breakout and a 1.12" OLED Breakout (SPI).
 
 The Park-O-Matic 6000 is a car reversing indicator mockup!
 
@@ -23,7 +23,7 @@ Press Ctrl+C a couple times to exit.
 
 # Set up OLED
 
-oled = sh1106(i2c(port=1, address=0x3C), rotate=2, height=128, width=128)
+oled = sh1106(spi(port=0, device=1, gpio_DC=9), rotate=2, height=128, width=128)
 
 # Set up VL53L1X Time of Flight sensor
 

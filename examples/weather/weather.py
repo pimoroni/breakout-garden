@@ -26,7 +26,7 @@ sudo apt install python{v}-lxml python{v}-pil
     sys.exit(1)
 
 import bme680
-from luma.core.interface.serial import i2c
+from luma.core.interface.serial import spi
 from luma.core.error import DeviceNotFoundError
 from luma.oled.device import sh1106
 
@@ -129,11 +129,7 @@ def get_weather_icon(weather):
 weather_icon = get_weather_icon(get_weather(coords))
 
 # Set up OLED
-try:
-    oled = sh1106(i2c(port=1, address=0x3C), rotate=2, height=128, width=128)
-except DeviceNotFoundError:
-    print('Did not find 1.12" OLED on 0x3d, trying 0x3d...')
-    oled = sh1106(i2c(port=1, address=0x3D), rotate=2, height=128, width=128)
+oled = sh1106(spi(port=0, device=1, gpio_DC=9), rotate=2, height=128, width=128)
 
 # Set up BME680 sensor
 sensor = bme680.BME680()
