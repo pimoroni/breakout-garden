@@ -51,8 +51,7 @@ points = []
 
 sx, sy, sz = lsm.accelerometer() # Starting values to zero out accelerometer
 
-sensitivity = 1 # Value from 1 to 10. Determines twitchiness of needle
-
+sensitivity = 5 # Value from 1 to 10. Determines twitchiness of needle
 
 # Function to thread accelerometer values separately to OLED drawing
 
