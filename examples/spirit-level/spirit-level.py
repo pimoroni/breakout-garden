@@ -31,7 +31,8 @@ disp.begin()
 # Load the image assets
 level = Image.open("images/spirit-level.png").convert("RGBA")
 bubble = Image.open("images/spirit-level-bubble.png").convert("RGBA")
-crosshair = Image.open("images/spirit-level-crosshair.png").convert("RGBA")
+crosshair_black = Image.open("images/spirit-level-crosshair-black.png").convert("RGBA")
+crosshair_red = Image.open("images/spirit-level-crosshair-red.png").convert("RGBA")
 
 # Sizes/coordinates of things
 centre = (88, 88)
@@ -54,6 +55,12 @@ while True:
     # Clamp to bounds of green circle
     x_level = min(WIDTH - border - bubble_dia, max(border, x_level))
     y_level = min(WIDTH - border - bubble_dia,max(border, y_level))
+
+    # Use red crosshair if bubble is close to centre
+    if (-0.05 < z < 0.05) and (-0.05 < y < 0.05):
+        crosshair = crosshair_red
+    else:
+        crosshair = crosshair_black
 
     # Construct image
     image = Image.new('RGBA', (WIDTH, HEIGHT), color=(0, 0, 0, 0))

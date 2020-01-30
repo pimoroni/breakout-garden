@@ -1,8 +1,7 @@
 # Spirit level example
 
-This examples emulates a circular spirit level, using the
-LCD to draw the spirit level and the accelerometer to
-detect orientation.
+This examples emulates a circular spirit level, using the LCD to draw 
+the spirit level and the 3DoF motion sensor to detect orientation.
 
 ## Pre-requisites
 
@@ -42,3 +41,6 @@ where the LCD is set up.
 ## Running this example
 
 To run this example, type `./spirit-level.py` in the terminal.
+
+It's assumed that you have the MSA301 breakout and LCD breakout lying flat, so 
+your Raspberry Pi or Raspberry Pi Zero will be perpendicular to your flat surface.
