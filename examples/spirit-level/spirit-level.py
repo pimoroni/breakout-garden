@@ -49,6 +49,11 @@ centre_y = HEIGHT / 2
 accel = msa301.MSA301()
 accel.set_power_mode('normal')
 
+x_vals = []
+y_vals = []
+
+smooth = 3
+
 while True:
     # Read MSA301 values
     x, y, z = accel.get_measurements()
@@ -68,6 +73,23 @@ while True:
         scale = (circle_rad - bubble_rad) / vector_length
         bubble_centre_x = centre_x + delta_x * scale
         bubble_centre_y = centre_y + delta_y * scale
+
+
+    # Average x and y values to smooth jitter
+    x_vals.append(bubble_centre_x)
+
+    if len(x_vals) > smooth:
+        x_vals = x_vals[1:]
+
+    bubble_centre_x = int(sum(x_vals) / len(x_vals))
+
+    y_vals.append(bubble_centre_y)
+
+    if len(y_vals) > smooth:
+        y_vals = y_vals[1:]
+
+    bubble_centre_y = int(sum(y_vals) / len(y_vals))
+
 
     # Use red crosshair if bubble is close to centre
     if (-0.05 < z < 0.05) and (-0.05 < y < 0.05):
