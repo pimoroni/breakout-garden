@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
+import math
 import msa301
 import ST7789 as ST7789
 
@@ -35,10 +36,14 @@ crosshair_black = Image.open("images/spirit-level-crosshair-black.png").convert(
 crosshair_red = Image.open("images/spirit-level-crosshair-red.png").convert("RGBA")
 
 # Sizes/coordinates of things
-centre = (88, 88)
 bubble_dia = 64
+bubble_rad = bubble_dia / 2
 circle_dia = 190
+circle_rad = circle_dia / 2
 border = (WIDTH - circle_dia) / 2
+
+centre_x = WIDTH / 2
+centre_y = HEIGHT / 2
 
 # Set up MSA301
 accel = msa301.MSA301()
@@ -49,12 +54,20 @@ while True:
     x, y, z = accel.get_measurements()
 
     # z = x-axis, y = y-axis
-    x_level = (2 - (z + 1)) * (circle_dia / 2) + border - (bubble_dia / 2)
-    y_level = (y + 1) * (circle_dia / 2) + border - (bubble_dia / 2)
+    bubble_centre_x = (2 - (z + 1)) * (circle_dia / 2) + border
+    bubble_centre_y = (y + 1) * (circle_dia / 2) + border
 
-    # Clamp to bounds of green circle
-    x_level = min(WIDTH - border - bubble_dia, max(border, x_level))
-    y_level = min(WIDTH - border - bubble_dia,max(border, y_level))
+    # Work out vector length to check if outside circle
+    delta_x = bubble_centre_x - centre_x
+    delta_y = bubble_centre_y - centre_y
+
+    vector_length = math.sqrt(delta_x ** 2 + delta_y ** 2)
+
+    # If outside circle, scale position back down relatively
+    if vector_length > circle_rad - bubble_rad:
+        scale = (circle_rad - bubble_rad) / vector_length
+        bubble_centre_x = centre_x + delta_x * scale
+        bubble_centre_y = centre_y + delta_y * scale
 
     # Use red crosshair if bubble is close to centre
     if (-0.05 < z < 0.05) and (-0.05 < y < 0.05):
@@ -65,7 +78,7 @@ while True:
     # Construct image
     image = Image.new('RGBA', (WIDTH, HEIGHT), color=(0, 0, 0, 0))
     image.paste(level, (0, 0))
-    image.paste(bubble, (int(x_level), int(y_level)), mask=bubble)
+    image.paste(bubble, (int(bubble_centre_x - (bubble_dia / 2)), int(bubble_centre_y  - (bubble_dia / 2))), mask=bubble)
     image.paste(crosshair, (0, 0), mask=crosshair)
 
     # Display on LCD
