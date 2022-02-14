@@ -6,12 +6,26 @@ LOG_FILE="$TMP_DIR/install.log"
 ACTION="install"
 VERBOSE=""
 FORCE=""
+EVERYTHING=""
+PYTHON="/usr/bin/python3"
 
 DEVICES=()
 STATUSES=()
 REPOS=()
 
 PADDING=5
+
+read -r -d '' USAGE << EOF
+Usage:
+
+sudo ./install.sh:
+    -h/--help    - print this message.
+    -v/--verbose - extra spicy debug output.
+    -f/--force   - force install.
+    -a/--all     - install *everything* (that breakouts.config knows about)
+
+    
+EOF
 
 success() {
 	printf "$(tput setaf 2)$1$(tput setaf 7)"
@@ -48,25 +62,55 @@ if [ ! -d "$TMP_DIR" ]; then
 	mkdir $TMP_DIR
 fi
 
-while getopts "uvf" option; do
-	case $option in
-		u  ) ACTION="uninstall";VERBOSE="true";;
-		v  ) VERBOSE="true";;
-		f  ) FORCE="true";;
-		\? ) printf "Invalid option: -$OPTARG\n"; exit 1;;
+
+while [[ $# -gt 0 ]]; do
+	K="$1"
+	case $K in
+	-h|--help)
+		echo "$USAGE";
+		exit 0
+		;;
+	-a|--all)
+		EVERYTHING="true";
+		shift
+		;;
+	-u|--uninstall)
+		ACTION="uninstall";VERBOSE="true";
+		shift
+		;;
+	-v|--verbose)
+		VERBOSE="true";
+		shift
+		;;
+	-f|--force)
+		FORCE="true";
+		shift
+		;;
+	*)
+		if [[ $1 == -* ]]; then
+			printf "Unrecognised option: $1\n\n";
+			echo "$USAGE";
+			exit 1
+		fi
+		POSITION_ARGS+=$("$1")
+		shift
 	esac
 done
 
-DETECTED=`python autodetect.py --install`
+# Set the script args to the remaining positional args, so $1 etc work as expected
+set -- "${POSITIONAL_ARGS[@]}"
+
+if [[ ! "$EVERYTHING" == "" ]]; then
+	DETECTED=`$PYTHON autodetect.py --install --force-all`
+else
+	DETECTED=`$PYTHON autodetect.py --install`
+fi
+
 COUNT=`echo -e "$DETECTED" | wc -l`
 
 if [[ "$COUNT" -eq "0" ]] || [[ "$DETECTED" == "" ]]; then
 	printf "Sorry, I couldn't find any breakouts!\n"
 	exit 1
-fi
-
-if [[ -f "/usr/bin/python3" ]]; then
-	DETECTED3=`python3 autodetect.py --install`
 fi
 
 array_index () {
@@ -83,7 +127,7 @@ array_index () {
 check_status () {
 	index=0
 
-	# Iterate through Python3 detected packages
+	# Iterate through detected packages
 	# and build out arrays of devices, statuses and Git repos
 	while read line; do
 		IFS='|' read -r -a package <<< "$line"
@@ -95,26 +139,6 @@ check_status () {
 		REPOS[$index]=$package_library
 		index=$(($index+1))
 	done < <(echo -e "$DETECTED")
-
-	# Iterate through Python3 detected packages
-	# and update status to required if they are missing
-	if [[ ! "$DETECTED3" == "" ]]; then
-		while read line; do
-			IFS='|' read -r -a package <<< "$line"
-			package_name=${package[0]}
-			package_library=${package[1]}
-			package_status=${package[2]}
-
-			# Find the index of the package in our original array
-			# that we produced in the first loop above
-			array_index DEVICES "$package_name"
-			index=$?
-
-			if [[ ! "$index" == "-1" ]] && [[ "$package_status" == "required" ]]; then
-				STATUSES[$index]=$package_status
-			fi
-		done < <(echo -e "$DETECTED3")
-	fi
 }
 
 do_uninstall () {
@@ -182,12 +206,23 @@ do_install () {
 		fi
 	else
 		echo "Warning: No install.sh found for $package_name." > $LOG_FILE 2>&1
-		STATUSES[$index]="error"
+		STATUSES[$index]="noinstall"
 		return 1
 	fi
 	cd $WORKING_DIR
 
 	STATUSES[$index]="installed"
+}
+
+warn_if () {
+	for ((y = 0; y < $COUNT; y++)); do
+		STATUS=${STATUSES[$y]}
+		if [[ "$STATUS" == "$1" ]]; then
+			warning "$2"
+			printf "\n"
+			break;
+		fi
+	done
 }
 
 display () {
@@ -205,6 +240,8 @@ display () {
 			case $STATUS in
 				"error"*)
 					warning "Error!         ";;
+				"noinstall"*)
+					warning "Unsupported!   ";;
 				"required"*)
 					warning "Required       ";;
 				"installed"*)
@@ -230,7 +267,8 @@ uninstalls_required=0
 
 printf "\n"
 
-printf "Breakout Garden: Installer. ($COUNT breakout(s) found) \n\n"
+printf "Breakout Garden: Installer.\n"
+printf "Found $COUNT breakout(s):\n\n"
 
 for ((y = 0; y < $COUNT; y++)); do
 	if [[ "$VERBOSE" == "" ]]; then
@@ -303,11 +341,17 @@ fi
 
 printf "\n\n"
 
+warn_if "error" "Errors occured during $ACTION. For more info see $LOG_FILE"
+warn_if "noinstall" "\nOne or more libraries don't support auto installation:"
+
 for ((y = 0; y < $COUNT; y++)); do
 	STATUS=${STATUSES[$y]}
-	if [[ "$STATUS" == "error" ]]; then
-		warning "Errors occured during $ACTION. For more info see $LOG_FILE"
-		printf "\n"
-		break;
+	package_name=${DEVICES[$y]}
+	package_library=${REPOS[$y]}
+
+	if [[ "$STATUS" == "noinstall" ]]; then
+		printf "%-30s %s" "$package_name:" " "
+		printf "See: https://github.com/pimoroni/$package_library\n"
 	fi
 done
+
