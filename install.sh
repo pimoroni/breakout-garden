@@ -27,6 +27,12 @@ sudo ./install.sh:
     
 EOF
 
+if [ $(id -u) -ne 0 ]; then
+	printf "Breakout Garden: Installer\n\n"
+	inform "Script must be run as root. Try 'sudo ./install.sh'\n"
+	exit 1
+fi
+
 success() {
 	printf "$(tput setaf 2)$1$(tput setaf 7)"
 }
@@ -38,80 +44,6 @@ inform() {
 warning() {
 	printf "$(tput setaf 1)$1$(tput setaf 7)"
 }
-
-if [ $(id -u) -ne 0 ]; then
-	printf "Breakout Garden: Installer\n\n"
-	inform "Script must be run as root. Try 'sudo ./install.sh'\n"
-	exit 1
-fi
-
-if [ ! -c "/dev/i2c-1" ]; then	
-	raspi-config nonint do_i2c 0
-	STATUS=$?
-	if [ $STATUS -eq 0 ]; then
-		inform "\nBreakout Garden requires I2C. We've enabled it for you.\n"
-	else
-		warning "\nWarning, Breakout Garden requires I2C but we couldn't enable it.\n"
-		printf "\nPlease try 'curl https://get.pimoroni.com/i2c | bash' to enable I2C first.\n"
-		exit 1
-	fi
-	sleep 0.1
-fi
-
-if [ ! -d "$TMP_DIR" ]; then
-	mkdir $TMP_DIR
-fi
-
-
-while [[ $# -gt 0 ]]; do
-	K="$1"
-	case $K in
-	-h|--help)
-		echo "$USAGE";
-		exit 0
-		;;
-	-a|--all)
-		EVERYTHING="true";
-		shift
-		;;
-	-u|--uninstall)
-		ACTION="uninstall";VERBOSE="true";
-		shift
-		;;
-	-v|--verbose)
-		VERBOSE="true";
-		shift
-		;;
-	-f|--force)
-		FORCE="true";
-		shift
-		;;
-	*)
-		if [[ $1 == -* ]]; then
-			printf "Unrecognised option: $1\n\n";
-			echo "$USAGE";
-			exit 1
-		fi
-		POSITION_ARGS+=$("$1")
-		shift
-	esac
-done
-
-# Set the script args to the remaining positional args, so $1 etc work as expected
-set -- "${POSITIONAL_ARGS[@]}"
-
-if [[ ! "$EVERYTHING" == "" ]]; then
-	DETECTED=`$PYTHON autodetect.py --install --force-all`
-else
-	DETECTED=`$PYTHON autodetect.py --install`
-fi
-
-COUNT=`echo -e "$DETECTED" | wc -l`
-
-if [[ "$COUNT" -eq "0" ]] || [[ "$DETECTED" == "" ]]; then
-	printf "Sorry, I couldn't find any breakouts!\n"
-	exit 1
-fi
 
 array_index () {
 	local -n array=$1
@@ -139,6 +71,16 @@ check_status () {
 		REPOS[$index]=$package_library
 		index=$(($index+1))
 	done < <(echo -e "$DETECTED")
+}
+
+pip_install () {
+	package=$1
+	printf "Checking for $package\n"
+	$PYTHON -c "import $package" > /dev/null 2>&1
+	if [ "$?" == "1" ]; then
+		printf "Installing $package\n"
+		$PYTHON -m pip install $package > $LOG_FILE 2>&1
+	fi
 }
 
 do_uninstall () {
@@ -236,7 +178,7 @@ display () {
 		STATUS=${STATUSES[$i]}
 
 		if [[ "$VERBOSE" == "" ]] || [[ "" == "$1" ]] || [[ "$i" == "$1" ]]; then
-			printf "%-30s %s" "$ITEM:" " "
+			printf "%-32s %s" "$ITEM:" " "
 			case $STATUS in
 				"error"*)
 					warning "Error!         ";;
@@ -259,6 +201,76 @@ display () {
 		fi
 	done
 }
+
+while [[ $# -gt 0 ]]; do
+	K="$1"
+	case $K in
+	-h|--help)
+		echo "$USAGE";
+		exit 0
+		;;
+	-a|--all)
+		EVERYTHING="true";
+		shift
+		;;
+	-u|--uninstall)
+		ACTION="uninstall";VERBOSE="true";
+		shift
+		;;
+	-v|--verbose)
+		VERBOSE="true";
+		shift
+		;;
+	-f|--force)
+		FORCE="true";
+		shift
+		;;
+	*)
+		if [[ $1 == -* ]]; then
+			printf "Unrecognised option: $1\n\n";
+			echo "$USAGE";
+			exit 1
+		fi
+		POSITION_ARGS+=$("$1")
+		shift
+	esac
+done
+
+# Set the script args to the remaining positional args, so $1 etc work as expected
+set -- "${POSITIONAL_ARGS[@]}"
+
+if [ ! -c "/dev/i2c-1" ]; then
+	raspi-config nonint do_i2c 0
+	STATUS=$?
+	if [ $STATUS -eq 0 ]; then
+		inform "\nBreakout Garden requires I2C. We've enabled it for you.\n"
+	else
+		warning "\nWarning, Breakout Garden requires I2C but we couldn't enable it.\n"
+		printf "\nPlease try 'curl https://get.pimoroni.com/i2c | bash' to enable I2C first.\n"
+		exit 1
+	fi
+	sleep 0.1
+fi
+
+if [ ! -d "$TMP_DIR" ]; then
+	mkdir $TMP_DIR
+fi
+
+pip_install "smbus2"
+
+if [[ ! "$EVERYTHING" == "" ]]; then
+	DETECTED=`$PYTHON autodetect.py --install --force-all`
+else
+	DETECTED=`$PYTHON autodetect.py --install`
+fi
+
+COUNT=`echo -e "$DETECTED" | wc -l`
+
+if [[ "$COUNT" -eq "0" ]] || [[ "$DETECTED" == "" ]]; then
+	printf "Sorry, I couldn't find any breakouts!\n"
+	exit 1
+fi
+
 
 check_status
 

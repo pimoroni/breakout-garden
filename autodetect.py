@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import smbus
+import smbus2
 import sys
 
 I2C_BUS = 1
@@ -15,7 +15,7 @@ if len(sys.argv) > 1:
         force_all = True
 
 try:
-    bus = smbus.SMBus(I2C_BUS)
+    bus = smbus2.SMBus(I2C_BUS)
 except IOError:
     print("Unable to access /dev/i2c-{}, please ensure i2c is enabled!".format(I2C_BUS))
     sys.exit()
