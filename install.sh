@@ -6,12 +6,32 @@ LOG_FILE="$TMP_DIR/install.log"
 ACTION="install"
 VERBOSE=""
 FORCE=""
+EVERYTHING=""
+PYTHON="/usr/bin/python3"
 
 DEVICES=()
 STATUSES=()
 REPOS=()
 
 PADDING=5
+
+read -r -d '' USAGE << EOF
+Usage:
+
+sudo ./install.sh:
+    -h/--help    - print this message.
+    -v/--verbose - extra spicy debug output.
+    -f/--force   - force install.
+    -a/--all     - install *everything* (that breakouts.config knows about)
+
+    
+EOF
+
+if [ $(id -u) -ne 0 ]; then
+	printf "Breakout Garden: Installer\n\n"
+	inform "Script must be run as root. Try 'sudo ./install.sh'\n"
+	exit 1
+fi
 
 success() {
 	printf "$(tput setaf 2)$1$(tput setaf 7)"
@@ -24,50 +44,6 @@ inform() {
 warning() {
 	printf "$(tput setaf 1)$1$(tput setaf 7)"
 }
-
-if [ $(id -u) -ne 0 ]; then
-	printf "Breakout Garden: Installer\n\n"
-	inform "Script must be run as root. Try 'sudo ./install.sh'\n"
-	exit 1
-fi
-
-if [ ! -c "/dev/i2c-1" ]; then	
-	raspi-config nonint do_i2c 0
-	STATUS=$?
-	if [ $STATUS -eq 0 ]; then
-		inform "\nBreakout Garden requires I2C. We've enabled it for you.\n"
-	else
-		warning "\nWarning, Breakout Garden requires I2C but we couldn't enable it.\n"
-		printf "\nPlease try 'curl https://get.pimoroni.com/i2c | bash' to enable I2C first.\n"
-		exit 1
-	fi
-	sleep 0.1
-fi
-
-if [ ! -d "$TMP_DIR" ]; then
-	mkdir $TMP_DIR
-fi
-
-while getopts "uvf" option; do
-	case $option in
-		u  ) ACTION="uninstall";VERBOSE="true";;
-		v  ) VERBOSE="true";;
-		f  ) FORCE="true";;
-		\? ) printf "Invalid option: -$OPTARG\n"; exit 1;;
-	esac
-done
-
-DETECTED=`python autodetect.py --install`
-COUNT=`echo -e "$DETECTED" | wc -l`
-
-if [[ "$COUNT" -eq "0" ]] || [[ "$DETECTED" == "" ]]; then
-	printf "Sorry, I couldn't find any breakouts!\n"
-	exit 1
-fi
-
-if [[ -f "/usr/bin/python3" ]]; then
-	DETECTED3=`python3 autodetect.py --install`
-fi
 
 array_index () {
 	local -n array=$1
@@ -83,7 +59,7 @@ array_index () {
 check_status () {
 	index=0
 
-	# Iterate through Python3 detected packages
+	# Iterate through detected packages
 	# and build out arrays of devices, statuses and Git repos
 	while read line; do
 		IFS='|' read -r -a package <<< "$line"
@@ -95,25 +71,15 @@ check_status () {
 		REPOS[$index]=$package_library
 		index=$(($index+1))
 	done < <(echo -e "$DETECTED")
+}
 
-	# Iterate through Python3 detected packages
-	# and update status to required if they are missing
-	if [[ ! "$DETECTED3" == "" ]]; then
-		while read line; do
-			IFS='|' read -r -a package <<< "$line"
-			package_name=${package[0]}
-			package_library=${package[1]}
-			package_status=${package[2]}
-
-			# Find the index of the package in our original array
-			# that we produced in the first loop above
-			array_index DEVICES "$package_name"
-			index=$?
-
-			if [[ ! "$index" == "-1" ]] && [[ "$package_status" == "required" ]]; then
-				STATUSES[$index]=$package_status
-			fi
-		done < <(echo -e "$DETECTED3")
+pip_install () {
+	package=$1
+	printf "Checking for $package\n"
+	$PYTHON -c "import $package" > /dev/null 2>&1
+	if [ "$?" == "1" ]; then
+		printf "Installing $package\n"
+		$PYTHON -m pip install $package > $LOG_FILE 2>&1
 	fi
 }
 
@@ -182,12 +148,23 @@ do_install () {
 		fi
 	else
 		echo "Warning: No install.sh found for $package_name." > $LOG_FILE 2>&1
-		STATUSES[$index]="error"
+		STATUSES[$index]="noinstall"
 		return 1
 	fi
 	cd $WORKING_DIR
 
 	STATUSES[$index]="installed"
+}
+
+warn_if () {
+	for ((y = 0; y < $COUNT; y++)); do
+		STATUS=${STATUSES[$y]}
+		if [[ "$STATUS" == "$1" ]]; then
+			warning "$2"
+			printf "\n"
+			break;
+		fi
+	done
 }
 
 display () {
@@ -201,10 +178,12 @@ display () {
 		STATUS=${STATUSES[$i]}
 
 		if [[ "$VERBOSE" == "" ]] || [[ "" == "$1" ]] || [[ "$i" == "$1" ]]; then
-			printf "%-30s %s" "$ITEM:" " "
+			printf "%-32s %s" "$ITEM:" " "
 			case $STATUS in
 				"error"*)
 					warning "Error!         ";;
+				"noinstall"*)
+					warning "Unsupported!   ";;
 				"required"*)
 					warning "Required       ";;
 				"installed"*)
@@ -223,6 +202,76 @@ display () {
 	done
 }
 
+while [[ $# -gt 0 ]]; do
+	K="$1"
+	case $K in
+	-h|--help)
+		echo "$USAGE";
+		exit 0
+		;;
+	-a|--all)
+		EVERYTHING="true";
+		shift
+		;;
+	-u|--uninstall)
+		ACTION="uninstall";VERBOSE="true";
+		shift
+		;;
+	-v|--verbose)
+		VERBOSE="true";
+		shift
+		;;
+	-f|--force)
+		FORCE="true";
+		shift
+		;;
+	*)
+		if [[ $1 == -* ]]; then
+			printf "Unrecognised option: $1\n\n";
+			echo "$USAGE";
+			exit 1
+		fi
+		POSITION_ARGS+=$("$1")
+		shift
+	esac
+done
+
+# Set the script args to the remaining positional args, so $1 etc work as expected
+set -- "${POSITIONAL_ARGS[@]}"
+
+if [ ! -c "/dev/i2c-1" ]; then
+	raspi-config nonint do_i2c 0
+	STATUS=$?
+	if [ $STATUS -eq 0 ]; then
+		inform "\nBreakout Garden requires I2C. We've enabled it for you.\n"
+	else
+		warning "\nWarning, Breakout Garden requires I2C but we couldn't enable it.\n"
+		printf "\nPlease try 'curl https://get.pimoroni.com/i2c | bash' to enable I2C first.\n"
+		exit 1
+	fi
+	sleep 0.1
+fi
+
+if [ ! -d "$TMP_DIR" ]; then
+	mkdir $TMP_DIR
+fi
+
+pip_install "smbus2"
+
+if [[ ! "$EVERYTHING" == "" ]]; then
+	DETECTED=`$PYTHON autodetect.py --install --force-all`
+else
+	DETECTED=`$PYTHON autodetect.py --install`
+fi
+
+COUNT=`echo -e "$DETECTED" | wc -l`
+
+if [[ "$COUNT" -eq "0" ]] || [[ "$DETECTED" == "" ]]; then
+	printf "Sorry, I couldn't find any breakouts!\n"
+	exit 1
+fi
+
+
 check_status
 
 installs_required=0
@@ -230,7 +279,8 @@ uninstalls_required=0
 
 printf "\n"
 
-printf "Breakout Garden: Installer. ($COUNT breakout(s) found) \n\n"
+printf "Breakout Garden: Installer.\n"
+printf "Found $COUNT breakout(s):\n\n"
 
 for ((y = 0; y < $COUNT; y++)); do
 	if [[ "$VERBOSE" == "" ]]; then
@@ -303,11 +353,17 @@ fi
 
 printf "\n\n"
 
+warn_if "error" "Errors occured during $ACTION. For more info see $LOG_FILE"
+warn_if "noinstall" "\nOne or more libraries don't support auto installation:"
+
 for ((y = 0; y < $COUNT; y++)); do
 	STATUS=${STATUSES[$y]}
-	if [[ "$STATUS" == "error" ]]; then
-		warning "Errors occured during $ACTION. For more info see $LOG_FILE"
-		printf "\n"
-		break;
+	package_name=${DEVICES[$y]}
+	package_library=${REPOS[$y]}
+
+	if [[ "$STATUS" == "noinstall" ]]; then
+		printf "%-30s %s" "$package_name:" " "
+		printf "See: https://github.com/pimoroni/$package_library\n"
 	fi
 done
+

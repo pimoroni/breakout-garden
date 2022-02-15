@@ -1,25 +1,28 @@
-#!/usr/bin/env python
-import smbus
+#!/usr/bin/env python3
+import smbus2
 import sys
 
 I2C_BUS = 1
 DEBUG = False
 
 install_mode = False
+force_all = False
 
 if len(sys.argv) > 1:
     if "--install" in sys.argv:
         install_mode = True
+    if "--force-all" in sys.argv:
+        force_all = True
 
 try:
-    bus = smbus.SMBus(I2C_BUS)
+    bus = smbus2.SMBus(I2C_BUS)
 except IOError:
     print("Unable to access /dev/i2c-{}, please ensure i2c is enabled!".format(I2C_BUS))
     sys.exit()
 
 
 def check_chip_id(i2c_addr, chip_ids):
-    if len(chip_ids) == 0:
+    if len(chip_ids) == 0 or force_all:
         return True
 
     for register in chip_ids:
@@ -46,7 +49,7 @@ def check_chip_id(i2c_addr, chip_ids):
 
 
 def get_device(line):
-    parts=[x.strip() for x in line.split(":")]
+    parts = [x.strip() for x in line.split(":")]
 
     i2c_addr = int(parts[0][0:4], 16)
 
@@ -64,6 +67,7 @@ def get_device(line):
 
     return i2c_addr, parts[1], parts[2], parts[3], chip_ids
 
+
 devices = [get_device(line) for line in open("breakouts.config").read().strip().split("\n")]
 
 addresses = set([device[0] for device in devices])
@@ -72,7 +76,7 @@ addresses = set([device[0] for device in devices])
 def identify(find_i2c_addr):
     try:
         bus.read_byte_data(find_i2c_addr, 0x00)
-    except IOError as e:
+    except IOError:
         pass
 
     for i2c_addr, library, module, name, chip_ids in devices:
@@ -92,20 +96,25 @@ found_devices = {}
 
 for i2c_addr in addresses:
     try:
-        bus.read_byte_data(i2c_addr, 0x00)
-        if DEBUG: print("Found device on: {:02x}".format(i2c_addr))
-        found_addr.append(i2c_addr)
-        installed, library, name = identify(i2c_addr)
-        if installed is None:
-            continue
-        if name not in found_devices:
-            found_devices[name] = [installed, library, [i2c_addr]]
-        else:
-            found_devices[name][2].append(i2c_addr)
+        if not force_all:
+            bus.read_byte_data(i2c_addr, 0x00)
+            if DEBUG:
+                print("Found device on: {:02x}".format(i2c_addr))
 
-    except IOError as e:
+    except IOError:
         if DEBUG: print("IOError reading: {:02x}".format(i2c_addr))
         continue
+
+    found_addr.append(i2c_addr)
+    installed, library, name = identify(i2c_addr)
+    if installed is None:
+        continue
+
+    if name not in found_devices:
+        found_devices[name] = [installed, library, [i2c_addr]]
+    else:
+        found_devices[name][2].append(i2c_addr)
+
 
 for name in found_devices:
     installed, library, i2c_addresses = found_devices[name]
